@@ -9,9 +9,15 @@
         <el-form-item label="商品">
           <el-input v-model="searchForm.keyword" placeholder="商品名称/编码" clearable />
         </el-form-item>
+        <el-form-item label="库存状态">
+          <el-select v-model="searchForm.lowStock" placeholder="全部" clearable style="width: 120px">
+            <el-option label="低库存" :value="true" />
+            <el-option label="正常库存" :value="false" />
+          </el-select>
+        </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="loadData">搜索</el-button>
-          <el-button @click="searchForm.keyword = ''; loadData()">重置</el-button>
+          <el-button @click="searchForm.keyword = ''; searchForm.lowStock = null; loadData()">重置</el-button>
         </el-form-item>
       </el-form>
       <el-table :data="tableData" v-loading="loading" stripe>
@@ -86,7 +92,7 @@ const tableData = ref([])
 const logs = ref([])
 const products = ref([])
 const pagination = reactive({ page: 1, pageSize: 10, total: 0 })
-const searchForm = reactive({ keyword: '' })
+const searchForm = reactive({ keyword: '', lowStock: null })
 const showCheckDialog = ref(false)
 const checkForm = reactive({ product_id: null, quantity: 0 })
 
@@ -104,7 +110,15 @@ const getLogType = (type) => {
 const loadData = async () => {
   loading.value = true
   try {
-    const res = await getInventory({ page: pagination.page, page_size: pagination.pageSize, keyword: searchForm.keyword })
+    const params = {
+      page: pagination.page,
+      page_size: pagination.pageSize,
+      search: searchForm.keyword
+    }
+    if (searchForm.lowStock !== null) {
+      params.low_stock = searchForm.lowStock
+    }
+    const res = await getInventory(params)
     tableData.value = res.data.items || []
     pagination.total = res.data.total || 0
   } catch (e) {

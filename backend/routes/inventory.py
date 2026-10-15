@@ -96,6 +96,22 @@ def list_logs():
     })
 
 
+@bp.route('/low-stock', methods=['GET'])
+@jwt_required()
+def get_low_stock():
+    query = Inventory.query.join(Product).filter(
+        Product.stock_min > 0,
+        Inventory.quantity < Product.stock_min
+    )
+    
+    items = query.order_by(Inventory.quantity.asc()).all()
+    
+    return jsonify({
+        'items': [serialize_inventory(i) for i in items],
+        'total': len(items)
+    })
+
+
 @bp.route('/check', methods=['POST'])
 @jwt_required()
 def check_inventory():
