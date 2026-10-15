@@ -117,6 +117,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { Goods, Shop, User, Box, Warning } from '@element-plus/icons-vue'
 import { getProducts } from '../api/modules/products'
 import { getSuppliers } from '../api/modules/suppliers'
@@ -124,6 +125,8 @@ import { getCustomers } from '../api/modules/customers'
 import { getInventory, getLowStockItems } from '../api/modules/inventory'
 import { getPurchases } from '../api/modules/purchases'
 import { getSales } from '../api/modules/sales'
+
+const router = useRouter()
 
 const stats = ref({
   products: 0,
