@@ -66,7 +66,7 @@ def auth_headers(client):
         'username': 'testadmin',
         'password': 'test123'
     })
-    token = response.get_json()['token']
+    token = response.get_json()['access_token']
     return {'Authorization': f'Bearer {token}'}
 
 

@@ -69,7 +69,7 @@ def get_purchase(id):
 @bp.route('', methods=['POST'])
 @jwt_required()
 def create_purchase():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     data = request.get_json()
     
     order_no = f"PO{datetime.now().strftime('%Y%m%d')}{uuid.uuid4().hex[:6].upper()}"
@@ -150,7 +150,7 @@ def update_purchase(id):
 @bp.route('/<int:id>/receive', methods=['POST'])
 @jwt_required()
 def receive_purchase(id):
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     order = PurchaseOrder.query.get_or_404(id)
     
     if order.status == 'received':

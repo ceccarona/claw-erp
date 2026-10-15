@@ -6,7 +6,7 @@ def test_login_success(client):
     })
     assert response.status_code == 200
     data = response.get_json()
-    assert 'token' in data
+    assert 'access_token' in data
     assert 'user' in data
 
 
