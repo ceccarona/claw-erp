@@ -24,6 +24,18 @@ pip install -r requirements.txt
 python app.py
 ```
 
+### 后端测试
+```bash
+cd backend
+pytest
+# 查看测试覆盖率
+pytest --cov=. --cov-report=html
+# 运行特定测试文件
+pytest tests/test_auth.py
+# 运行特定测试
+pytest tests/test_auth.py::test_login_success
+```
+
 ### 前端 setup
 ```bash
 cd frontend

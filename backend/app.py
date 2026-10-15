@@ -10,13 +10,16 @@ from models import db
 jwt = JWTManager()
 
 
-def create_app():
+def create_app(config_overrides=None):
     app = Flask(__name__)
     app.config['SECRET_KEY'] = SECRET_KEY
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DATABASE_PATH}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['JWT_SECRET_KEY'] = SECRET_KEY
     app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=JWT_EXPIRATION_HOURS)
+    
+    if config_overrides:
+        app.config.update(config_overrides)
 
     db.init_app(app)
     jwt.init_app(app)
@@ -62,7 +65,11 @@ def _create_default_admin():
         db.session.commit()
 
 
-app = create_app()
+def get_app():
+    return create_app()
+
+app = None
 
 if __name__ == '__main__':
+    app = create_app()
     app.run(debug=True, port=5000)

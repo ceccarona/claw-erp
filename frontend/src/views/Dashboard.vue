@@ -46,6 +46,45 @@
           </div>
         </el-card>
       </el-col>
+      <el-col :span="6">
+        <el-card shadow="hover" class="low-stock-card" @click="goToLowStockInventory">
+          <div class="stat-card">
+            <el-icon class="stat-icon" color="#f56c6c"><Warning /></el-icon>
+            <div class="stat-info">
+              <div class="stat-value">{{ stats.lowStock }}</div>
+              <div class="stat-label">低库存预警</div>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
+    <el-row :gutter="20" style="margin-top: 20px">
+      <el-col :span="24">
+        <el-card v-if="lowStockItems.length > 0" class="low-stock-alert">
+          <template #header>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <el-icon color="#f56c6c"><Warning /></el-icon>
+              <span>低库存商品预警</span>
+              <el-tag type="danger" size="small">{{ lowStockItems.length }} 个商品</el-tag>
+            </div>
+          </template>
+          <el-table :data="lowStockItems" size="small">
+            <el-table-column prop="product_code" label="商品编码" width="120" />
+            <el-table-column prop="product_name" label="商品名称" />
+            <el-table-column label="当前库存" width="100">
+              <template #default="{ row }">
+                <el-tag type="danger" size="small">{{ row.quantity }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="stock_min" label="最低库存" width="100" />
+            <el-table-column label="缺口" width="100">
+              <template #default="{ row }">
+                <span style="color: #f56c6c">{{ row.stock_min - row.quantity }}</span>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+      </el-col>
     </el-row>
     <el-row :gutter="20" style="margin-top: 20px">
       <el-col :span="12">
@@ -78,11 +117,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Goods, Shop, User, Box } from '@element-plus/icons-vue'
+import { Goods, Shop, User, Box, Warning } from '@element-plus/icons-vue'
 import { getProducts } from '../api/modules/products'
 import { getSuppliers } from '../api/modules/suppliers'
 import { getCustomers } from '../api/modules/customers'
-import { getInventory } from '../api/modules/inventory'
+import { getInventory, getLowStockItems } from '../api/modules/inventory'
 import { getPurchases } from '../api/modules/purchases'
 import { getSales } from '../api/modules/sales'
 
@@ -90,28 +129,40 @@ const stats = ref({
   products: 0,
   suppliers: 0,
   customers: 0,
-  inventory: 0
+  inventory: 0,
+  lowStock: 0
 })
 
 const recentPurchases = ref([])
 const recentSales = ref([])
+const lowStockItems = ref([])
+
+const goToLowStockInventory = () => {
+  router.push({ path: '/inventory', query: { lowStock: 'true' } })
+}
 
 const loadData = async () => {
   try {
-    const [pRes, sRes, cRes, iRes, purRes, salRes] = await Promise.all([
-      getProducts({ page: 1, page_size: 1 }),
-      getSuppliers({ page: 1, page_size: 1 }),
-      getCustomers({ page: 1, page_size: 1 }),
-      getInventory({ page: 1, page_size: 1 }),
-      getPurchases({ page: 1, page_size: 5 }),
-      getSales({ page: 1, page_size: 5 })
+    const results = await Promise.allSettled([
+      getProducts({ page: 1, per_page: 1 }),
+      getSuppliers({ page: 1, per_page: 1 }),
+      getCustomers({ page: 1, per_page: 1 }),
+      getInventory({ page: 1, per_page: 1 }),
+      getLowStockItems(),
+      getPurchases({ page: 1, per_page: 5 }),
+      getSales({ page: 1, per_page: 5 })
     ])
-    stats.value.products = pRes.data.total || 0
-    stats.value.suppliers = sRes.data.total || 0
-    stats.value.customers = cRes.data.total || 0
-    stats.value.inventory = iRes.data.total || 0
-    recentPurchases.value = purRes.data.items || []
-    recentSales.value = salRes.data.items || []
+    
+    if (results[0].status === 'fulfilled') stats.value.products = results[0].value.data.total || 0
+    if (results[1].status === 'fulfilled') stats.value.suppliers = results[1].value.data.total || 0
+    if (results[2].status === 'fulfilled') stats.value.customers = results[2].value.data.total || 0
+    if (results[3].status === 'fulfilled') stats.value.inventory = results[3].value.data.total || 0
+    if (results[4].status === 'fulfilled') {
+      stats.value.lowStock = results[4].value.data.total || 0
+      lowStockItems.value = results[4].value.data.items || []
+    }
+    if (results[5].status === 'fulfilled') recentPurchases.value = results[5].value.data.items || []
+    if (results[6].status === 'fulfilled') recentSales.value = results[6].value.data.items || []
   } catch (e) {
     console.error(e)
   }
@@ -139,5 +190,16 @@ onMounted(loadData)
 .stat-label {
   color: #999;
   font-size: 14px;
+}
+.low-stock-card {
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.low-stock-card:hover {
+  transform: translateY(-2px);
+}
+.low-stock-alert :deep(.el-card__header) {
+  background-color: #fef0f0;
+  border-bottom: 1px solid #fde2e2;
 }
 </style>

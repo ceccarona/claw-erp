@@ -69,7 +69,7 @@ def get_sale(id):
 @bp.route('', methods=['POST'])
 @jwt_required()
 def create_sale():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     data = request.get_json()
     
     order_no = f"SO{datetime.now().strftime('%Y%m%d')}{uuid.uuid4().hex[:6].upper()}"
@@ -150,7 +150,7 @@ def update_sale(id):
 @bp.route('/<int:id>/deliver', methods=['POST'])
 @jwt_required()
 def deliver_sale(id):
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     order = SalesOrder.query.get_or_404(id)
     
     if order.status == 'delivered':
