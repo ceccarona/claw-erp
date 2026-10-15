@@ -37,7 +37,7 @@ def list_inventory():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
     search = request.args.get('search', '')
-    low_stock = request.args.get('low_stock', type=bool)
+    low_stock_str = request.args.get('low_stock', '')
     
     query = Inventory.query.join(Product)
     
@@ -47,8 +47,10 @@ def list_inventory():
             Product.code.like(f'%{search}%')
         ))
     
-    if low_stock:
+    if low_stock_str == 'true':
         query = query.filter(Product.stock_min > 0, Inventory.quantity < Product.stock_min)
+    elif low_stock_str == 'false':
+        query = query.filter(db.or_(Product.stock_min == 0, Inventory.quantity >= Product.stock_min))
     
     pagination = query.order_by(Inventory.id.desc()).paginate(page=page, per_page=per_page, error_out=False)
     
@@ -99,16 +101,41 @@ def list_logs():
 @bp.route('/low-stock', methods=['GET'])
 @jwt_required()
 def get_low_stock():
-    query = Inventory.query.join(Product).filter(
-        Product.stock_min > 0,
-        Inventory.quantity < Product.stock_min
+    limit = request.args.get('limit', 100, type=int)
+    limit = min(limit, 500)
+    
+    query = db.session.query(Product).outerjoin(Inventory).options(
+        db.joinedload(Product.inventory)
+    ).filter(
+        Product.stock_min > 0
+    ).filter(
+        db.or_(
+            Inventory.quantity == None,
+            Inventory.quantity < Product.stock_min
+        )
     )
     
-    items = query.order_by(Inventory.quantity.asc()).all()
+    items = query.order_by(
+        db.case((Inventory.quantity == None, 0), else_=Inventory.quantity).asc()
+    ).limit(limit).all()
+    
+    result_items = []
+    for product in items:
+        current_qty = float(product.inventory.quantity) if product.inventory and product.inventory.quantity else 0
+        result_items.append({
+            'id': product.inventory.id if product.inventory else None,
+            'product_id': product.id,
+            'product_name': product.name,
+            'product_code': product.code,
+            'quantity': current_qty,
+            'stock_min': product.stock_min,
+            'stock_max': product.stock_max,
+            'updated_at': product.inventory.updated_at.isoformat() if product.inventory and product.inventory.updated_at else None
+        })
     
     return jsonify({
-        'items': [serialize_inventory(i) for i in items],
-        'total': len(items)
+        'items': result_items,
+        'total': len(result_items)
     })
 
 

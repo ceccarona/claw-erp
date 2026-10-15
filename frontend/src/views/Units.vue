@@ -112,12 +112,19 @@ const handleEdit = (row) => {
 }
 
 const handleDelete = async (row) => {
-  await ElMessageBox.confirm('确定要删除该单位吗？如果该单位已被商品使用，将无法删除。', '提示', { type: 'warning' })
+  try {
+    await ElMessageBox.confirm('确定要删除该单位吗？如果该单位已被商品使用，将无法删除。', '提示', { type: 'warning' })
+  } catch {
+    return
+  }
+  
   try {
     await deleteUnit(row.id)
     ElMessage.success('删除成功')
     loadData()
   } catch (e) {
+    const errorMsg = e.response?.data?.error || '删除失败'
+    ElMessage.error(errorMsg)
     console.error(e)
   }
 }
@@ -137,6 +144,8 @@ const handleSubmit = async () => {
     dialogVisible.value = false
     loadData()
   } catch (e) {
+    const errorMsg = e.response?.data?.error || '操作失败'
+    ElMessage.error(errorMsg)
     console.error(e)
   }
 }

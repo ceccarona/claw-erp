@@ -11,17 +11,15 @@ from werkzeug.security import generate_password_hash
 
 
 @pytest.fixture(scope='function')
-def app():
+def app(tmp_path):
     """创建测试应用"""
-    test_db_path = '/tmp/test_claw_erp.db'
+    test_db_path = tmp_path / 'test_claw_erp.db'
     
-    if os.path.exists(test_db_path):
-        os.remove(test_db_path)
-    
-    app = create_app()
-    app.config['TESTING'] = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{test_db_path}'
-    app.config['JWT_SECRET_KEY'] = 'test-secret-key'
+    app = create_app({
+        'TESTING': True,
+        'SQLALCHEMY_DATABASE_URI': f'sqlite:///{test_db_path}',
+        'JWT_SECRET_KEY': 'test-secret-key-for-testing-purposes-only'
+    })
     
     with app.app_context():
         db.create_all()
@@ -48,9 +46,6 @@ def app():
     with app.app_context():
         db.session.remove()
         db.drop_all()
-    
-    if os.path.exists(test_db_path):
-        os.remove(test_db_path)
 
 
 @pytest.fixture(scope='function')
@@ -106,6 +101,7 @@ def sample_product(app, sample_category, sample_unit):
             status=1
         )
         db.session.add(product)
+        db.session.flush()
         
         inventory = Inventory(product_id=product.id, quantity=50)
         db.session.add(inventory)

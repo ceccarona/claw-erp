@@ -82,9 +82,12 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getInventory, getInventoryLogs, checkInventory } from '../api/modules/inventory'
 import { getProducts } from '../api/modules/products'
+
+const router = useRouter()
 
 const loading = ref(false)
 const logsLoading = ref(false)
@@ -112,11 +115,11 @@ const loadData = async () => {
   try {
     const params = {
       page: pagination.page,
-      page_size: pagination.pageSize,
+      per_page: pagination.pageSize,
       search: searchForm.keyword
     }
     if (searchForm.lowStock !== null) {
-      params.low_stock = searchForm.lowStock
+      params.low_stock = searchForm.lowStock ? 'true' : 'false'
     }
     const res = await getInventory(params)
     tableData.value = res.data.items || []
@@ -162,6 +165,10 @@ const handleCheck = async () => {
 }
 
 onMounted(() => {
+  const query = router.currentRoute.value.query
+  if (query.lowStock === 'true') {
+    searchForm.lowStock = true
+  }
   loadData()
   loadLogs()
   loadProducts()

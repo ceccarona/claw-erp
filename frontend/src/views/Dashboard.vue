@@ -47,7 +47,7 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="hover" class="low-stock-card">
+        <el-card shadow="hover" class="low-stock-card" @click="goToLowStockInventory">
           <div class="stat-card">
             <el-icon class="stat-icon" color="#f56c6c"><Warning /></el-icon>
             <div class="stat-info">
@@ -137,25 +137,32 @@ const recentPurchases = ref([])
 const recentSales = ref([])
 const lowStockItems = ref([])
 
+const goToLowStockInventory = () => {
+  router.push({ path: '/inventory', query: { lowStock: 'true' } })
+}
+
 const loadData = async () => {
   try {
-    const [pRes, sRes, cRes, iRes, lowRes, purRes, salRes] = await Promise.all([
-      getProducts({ page: 1, page_size: 1 }),
-      getSuppliers({ page: 1, page_size: 1 }),
-      getCustomers({ page: 1, page_size: 1 }),
-      getInventory({ page: 1, page_size: 1 }),
+    const results = await Promise.allSettled([
+      getProducts({ page: 1, per_page: 1 }),
+      getSuppliers({ page: 1, per_page: 1 }),
+      getCustomers({ page: 1, per_page: 1 }),
+      getInventory({ page: 1, per_page: 1 }),
       getLowStockItems(),
-      getPurchases({ page: 1, page_size: 5 }),
-      getSales({ page: 1, page_size: 5 })
+      getPurchases({ page: 1, per_page: 5 }),
+      getSales({ page: 1, per_page: 5 })
     ])
-    stats.value.products = pRes.data.total || 0
-    stats.value.suppliers = sRes.data.total || 0
-    stats.value.customers = cRes.data.total || 0
-    stats.value.inventory = iRes.data.total || 0
-    stats.value.lowStock = lowRes.data.total || 0
-    lowStockItems.value = lowRes.data.items || []
-    recentPurchases.value = purRes.data.items || []
-    recentSales.value = salRes.data.items || []
+    
+    if (results[0].status === 'fulfilled') stats.value.products = results[0].value.data.total || 0
+    if (results[1].status === 'fulfilled') stats.value.suppliers = results[1].value.data.total || 0
+    if (results[2].status === 'fulfilled') stats.value.customers = results[2].value.data.total || 0
+    if (results[3].status === 'fulfilled') stats.value.inventory = results[3].value.data.total || 0
+    if (results[4].status === 'fulfilled') {
+      stats.value.lowStock = results[4].value.data.total || 0
+      lowStockItems.value = results[4].value.data.items || []
+    }
+    if (results[5].status === 'fulfilled') recentPurchases.value = results[5].value.data.items || []
+    if (results[6].status === 'fulfilled') recentSales.value = results[6].value.data.items || []
   } catch (e) {
     console.error(e)
   }
@@ -186,6 +193,10 @@ onMounted(loadData)
 }
 .low-stock-card {
   cursor: pointer;
+  transition: transform 0.2s;
+}
+.low-stock-card:hover {
+  transform: translateY(-2px);
 }
 .low-stock-alert :deep(.el-card__header) {
   background-color: #fef0f0;

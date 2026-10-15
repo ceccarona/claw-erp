@@ -33,7 +33,7 @@
         <el-form-item label="父分类" prop="parent_id">
           <el-tree-select
             v-model="form.parent_id"
-            :data="categoryTree"
+            :data="form.id ? getAvailableParents(form.id) : categoryTree"
             :props="{ label: 'name', value: 'id', children: 'children' }"
             placeholder="请选择父分类（可选）"
             clearable
@@ -101,6 +101,36 @@ const handleAdd = () => {
   loadAllCategories()
 }
 
+const getAvailableParents = (currentId) => {
+  const excludeIds = new Set([currentId])
+  
+  const addDescendants = (categories) => {
+    for (const cat of categories) {
+      if (excludeIds.has(cat.id)) {
+        if (cat.children) {
+          cat.children.forEach(child => {
+            excludeIds.add(child.id)
+            if (child.children) addDescendants([child])
+          })
+        }
+      }
+    }
+  }
+  
+  if (currentId) {
+    addDescendants(categoryTree.value)
+  }
+  
+  const filterTree = (categories) => {
+    return categories.filter(cat => !excludeIds.has(cat.id)).map(cat => ({
+      ...cat,
+      children: cat.children ? filterTree(cat.children) : []
+    }))
+  }
+  
+  return filterTree(categoryTree.value)
+}
+
 const handleEdit = (row) => {
   Object.assign(form, { id: row.id, name: row.name, parent_id: row.parent_id })
   dialogTitle.value = '编辑分类'
@@ -109,12 +139,19 @@ const handleEdit = (row) => {
 }
 
 const handleDelete = async (row) => {
-  await ElMessageBox.confirm('确定要删除该分类吗？如果该分类有子分类或商品，将无法删除。', '提示', { type: 'warning' })
+  try {
+    await ElMessageBox.confirm('确定要删除该分类吗？如果该分类有子分类或商品，将无法删除。', '提示', { type: 'warning' })
+  } catch {
+    return
+  }
+  
   try {
     await deleteCategory(row.id)
     ElMessage.success('删除成功')
     loadData()
   } catch (e) {
+    const errorMsg = e.response?.data?.error || '删除失败'
+    ElMessage.error(errorMsg)
     console.error(e)
   }
 }
@@ -134,6 +171,8 @@ const handleSubmit = async () => {
     dialogVisible.value = false
     loadData()
   } catch (e) {
+    const errorMsg = e.response?.data?.error || '操作失败'
+    ElMessage.error(errorMsg)
     console.error(e)
   }
 }
