@@ -6,8 +6,18 @@ def test_login_success(client):
     })
     assert response.status_code == 200
     data = response.get_json()
+    
+    # 验证响应结构
     assert 'access_token' in data
+    assert isinstance(data['access_token'], str)
+    assert len(data['access_token']) > 0
+    
     assert 'user' in data
+    assert 'id' in data['user']
+    assert 'username' in data['user']
+    assert 'nickname' in data['user']
+    assert 'role' in data['user']
+    assert data['user']['username'] == 'testadmin'
 
 
 def test_login_invalid_credentials(client):
