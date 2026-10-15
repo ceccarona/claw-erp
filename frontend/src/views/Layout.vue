@@ -18,6 +18,14 @@
           <el-icon><Goods /></el-icon>
           <span>商品管理</span>
         </el-menu-item>
+        <el-menu-item index="/categories">
+          <el-icon><Grid /></el-icon>
+          <span>商品分类</span>
+        </el-menu-item>
+        <el-menu-item index="/units">
+          <el-icon><List /></el-icon>
+          <span>计量单位</span>
+        </el-menu-item>
         <el-menu-item index="/suppliers">
           <el-icon><Shop /></el-icon>
           <span>供应商管理</span>
@@ -60,7 +68,7 @@
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { House, Goods, Shop, User, ShoppingCart, Sell, Box } from '@element-plus/icons-vue'
+import { House, Goods, Shop, User, ShoppingCart, Sell, Box, Grid, List } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
